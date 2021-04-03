@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot logs</title>
+</head>
+<body>
+    <canvas id="myChart" width="400" height="400"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.6.1/randomColor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@lyo/pretty-ms@4.0.0/pretty-ms.min.js"></script>
+<script src="urls-response-time.js"></script>
+<script>
+
+    function timestaptotime(unix_timestamp){
+        // Create a new JavaScript Date object based on the timestamp
+        // multiplied by 1000 so that the argument is in milliseconds, not seconds.
+        var date = new Date(unix_timestamp * 1000);
+        // Hours part from the timestamp
+        var hours = date.getHours();
+        // Minutes part from the timestamp
+        var minutes = "0" + date.getMinutes();
+        // Seconds part from the timestamp
+        var seconds = "0" + date.getSeconds();
+
+        // Will display time in 10:30:23 format
+       return hours;
+    }
+
+    function getArrayOfTime(time) {
+        var x = 60; //minutes interval
+        var times = []; // time array
+        var tt = time; // start time
+        var ap = ['AM', 'PM']; // AM-PM
+
+        //loop to increment the time and push results in array
+        for (var i=0;tt<24*60; i++) {
+        var hh = Math.floor(tt/60); // getting hours of day in 0-24 format
+        var mm = (tt%60); // getting minutes of the hour in 0-55 format
+        times[i] = ("0" + (hh % 12)).slice(-2) + ':' + ("0" + mm).slice(-2) + ap[Math.floor(hh/12)]; // pushing data in array in [00:00 - 12:00 AM/PM format]
+        tt = tt + x;
+        }
+
+        return times;
+    }
+
+    const colors = [];
+
+    function getRandomcolors() {
+        const color = randomColor();
+        if(colors.includes(color)){
+            getRandomcolors();
+        }
+        colors.push(color)
+        return color;
+    }
+
+
+
+
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    const dataSet = Object.keys(datapoints);
+    const data = {
+                    labels: getArrayOfTime(timestaptotime(datapoints["/commentpost"].time[0])),
+                    datasets: dataSet.map(r => {
+                        const c = getRandomcolors();
+                        return {
+                            label: datapoints[r].name,
+                            data: datapoints[r].responseTimes,
+                            borderColor: c,
+                            backgroundColor: c,
+                        }
+                    })
+                 };
+
+    const config = {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'chartArea'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Response Time Chart For JIYA POST API'
+                        }
+                    },
+                    scales: {
+                                y: {
+                                    ticks: {
+                                        // Include a dollar sign in the ticks
+                                        callback: function(value, index, values) {
+                                            return prettyMs(value);
+                                        }
+                                    }
+                                }
+                            }
+                },
+            };
+
+    var myChart = new Chart(ctx, config);
+
+</script>
+
+</body>
+</html>
