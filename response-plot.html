@@ -5,15 +5,54 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plot logs</title>
+    <link rel="stylesheet" href="https://unpkg.com/js-datepicker/dist/datepicker.min.css" />
+    <style>
+        .d-container{
+            text-align: center;
+        }
+        #loading {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            position: fixed;
+            display: none;
+            opacity: 0.7;
+            background-color: #fff;
+            z-index: 99;
+            text-align: center;
+        }
+
+        #loading-image {
+            position: absolute;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            z-index: 100;
+            transform: translateX(-50%) translateY(-50%);
+            z-index: 100;
+        }
+    </style>
 </head>
 <body>
+    <div id="loading">
+        <img id="loading-image" src="images/ajax-loader.gif" alt="Loading..." />
+      </div>
+      
+    <div class="d-container">
+
+        Select Date to view Log Plot: <input type="text" id="dateselector" />
+    </div>
     <canvas id="myChart" width="400" height="400"></canvas>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.1/chart.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.6.1/randomColor.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@lyo/pretty-ms@4.0.0/pretty-ms.min.js"></script>
-<script src="urls-response-time.js"></script>
+<script src="https://unpkg.com/js-datepicker"></script>
 <script>
 
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const loading = document.getElementById('loading')
+    let plotChart;
     function timestaptotime(unix_timestamp){
         // Create a new JavaScript Date object based on the timestamp
         // multiplied by 1000 so that the argument is in milliseconds, not seconds.
@@ -57,61 +96,95 @@
         return color;
     }
 
+    function formatDate(date) {
+        var d = date ? new Date(date) : new Date(),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
 
+        if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;
 
+        return [year, month, day].join('-');
+    }
 
+    function generateChartByDate(date){
+        loading.style.display = 'block';
+        fetch(`logs/${date}.json`)
+        .then(r => r.json())
+        .then(res => {
 
-    var ctx = document.getElementById('myChart').getContext('2d');
-    const dataSet = Object.keys(datapoints);
-    const data = {
-                    labels: getArrayOfTime(timestaptotime(datapoints["/commentpost"].time[0])),
-                    datasets: dataSet.map(r => {
-                        const c = getRandomcolors();
-                        return {
-                            label: datapoints[r].name,
-                            data: datapoints[r].responseTimes,
-                            borderColor: c,
-                            backgroundColor: c,
-                        }
-                    })
-                 };
+            const datapoints = res;
+            const dataSet = Object.keys(datapoints);
+            const data = {
+                            labels: getArrayOfTime(timestaptotime(datapoints["/commentpost"].time[0])),
+                            datasets: dataSet.map(r => {
+                                const c = getRandomcolors();
+                                return {
+                                    label: `${datapoints[r].name} (${datapoints[r].responseTimes.length})`,
+                                    data: datapoints[r].responseTimes,
+                                    borderColor: c,
+                                    backgroundColor: c,
+                                }
+                            })
+                        };
 
-    const config = {
-                type: 'line',
-                data: data,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'chartArea'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Response Time Chart For JIYA POST API'
-                        },
-                        tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.dataset.label || '';
-                                return `${label} ${prettyMs(context.raw)}`;
+            const config = {
+                        type: 'line',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'chartArea'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Response Time Chart For JIYA POST API'
+                                },
+                                tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        return `${label} ${prettyMs(context.raw)}`;
+                                    }
+                                },
                             }
-                        },
-                    }
-                    },
-                    scales: {
-                                y: {
-                                    ticks: {
-                                        // Include a dollar sign in the ticks
-                                        callback: function(value, index, values) {
-                                            return prettyMs(value);
+                            },
+                            scales: {
+                                        y: {
+                                            ticks: {
+                                                // Include a dollar sign in the ticks
+                                                callback: function(value, index, values) {
+                                                    return prettyMs(value);
+                                                }
+                                            }
                                         }
                                     }
-                                }
-                            }
-                },
-            };
+                        },
+                    };
+            plotChart && plotChart.destroy();
+            plotChart = new Chart(ctx, config);
 
-    var myChart = new Chart(ctx, config);
+        })
+        .catch(e => {
+            alert("Error fetching logfile !!")
+        })
+        .finally(() => loading.style.display = 'none')
+    }
+
+    const curdate = formatDate();
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateparam = urlParams.get('date');
+    const logdate = dateparam || curdate
+    const picker = datepicker('#dateselector',{
+        onSelect: (instance, date) => {
+            generateChartByDate(formatDate(date))
+        }
+    })
+    generateChartByDate(logdate)
 
 </script>
 
