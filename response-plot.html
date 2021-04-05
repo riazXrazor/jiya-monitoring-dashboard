@@ -85,7 +85,7 @@
         return times;
     }
 
-    const colors = [];
+    let colors = [];
 
     function getRandomcolors() {
         const color = randomColor();
@@ -110,20 +110,26 @@
         return [year, month, day].join('-');
     }
 
+    function calculateAvgResTime(obj){
+        const total = obj.responseTimes.length
+        const sumRT = obj.responseTimes.reduce((a,i) => a+i,0)
+        return parseInt(sumRT/total)
+    }
+
     function generateChartByDate(date){
         loading.style.display = 'block';
         fetch(`logs/${date}.json`)
         .then(r => r.json())
         .then(res => {
-
+            colors = [];
             const datapoints = res;
             const dataSet = Object.keys(datapoints);
             const data = {
-                            labels: getArrayOfTime(timestaptotime(datapoints["/commentpost"].time[0])),
+                            labels: getArrayOfTime(timestaptotime(datapoints["/gettimelineposts"].time[0])),
                             datasets: dataSet.map(r => {
                                 const c = getRandomcolors();
                                 return {
-                                    label: `${datapoints[r].name} (${datapoints[r].responseTimes.length})`,
+                                    label: `${datapoints[r].name} (${datapoints[r].responseTimes.length} | ${prettyMs(calculateAvgResTime(datapoints[r]))})`,
                                     data: datapoints[r].responseTimes,
                                     borderColor: c,
                                     backgroundColor: c,
@@ -170,6 +176,7 @@
 
         })
         .catch(e => {
+            console.log(e.message);
             alert("Error fetching logfile !!")
         })
         .finally(() => loading.style.display = 'none')
