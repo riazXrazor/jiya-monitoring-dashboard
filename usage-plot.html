@@ -69,7 +69,7 @@
     }
 
     function getArrayOfTime(time) {
-        var x = 60; //minutes interval
+        var x = 10; //minutes interval
         var times = []; // time array
         var tt = time; // start time
         var ap = ['AM', 'PM']; // AM-PM
@@ -85,14 +85,14 @@
         return times;
     }
 
-    let colors = [];
+    let colors = {};
 
-    function getRandomcolors() {
+    function getRandomcolors(r) {
         const color = randomColor();
-        if(colors.includes(color)){
-            getRandomcolors();
+        if(colors[r]){
+            getRandomcolors(r);
         }
-        colors.push(color)
+        colors[r] = color
         return color;
     }
 
@@ -109,6 +109,19 @@
 
         return [year, month, day].join('-');
     }
+
+    function formatAMPM(date) {
+        date = new Date(date)
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        var strTime = hours + ':' + minutes + ' ' + ampm;
+        return strTime;
+    }
+
 
     function calculateAvgResTime(obj){
         const total = obj.responseTimes.length
@@ -128,58 +141,53 @@
         .then(logs => {
             return {...logs[0],...logs[1]}
         })
-         .then(res => {
-            colors = [];
+        .then(res => {
+            colors = {};
             const datapoints = res;
             const dataSet = Object.keys(datapoints);
             const data = {
-                            labels: getArrayOfTime(timestaptotime(datapoints["/gettimelineposts"].time[0])),
-                            datasets: dataSet.map(r => {
-                                const c = getRandomcolors();
-                                return {
-                                    label: `${datapoints[r].name} (${datapoints[r].responseTimes.length} | ${prettyMs(calculateAvgResTime(datapoints[r]))})`,
-                                    data: datapoints[r].responseTimes,
-                                    borderColor: c,
-                                    backgroundColor: c,
-                                }
-                            })
-                        };
+                        labels: dataSet,
+                        datasets: [{
+                                        label: 'API calls',
+                                        data: dataSet.map(r => {
+                                                    const c = getRandomcolors(r);
+                                                    return datapoints[r].responseTimes.length
+                                        }),
+                                        backgroundColor: dataSet.map(r => colors[r]),
+                                    }]
+                    }
 
             const config = {
-                        type: 'line',
+                        type: 'bar',
                         data: data,
                         options: {
+                            indexAxis: 'y',
                             responsive: true,
                             plugins: {
-                                legend: {
-                                    position: 'chartArea'
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Response Time Chart For JIYA API'
-                                },
-                                tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.dataset.label || '';
-                                        return `${label} ${prettyMs(context.raw)}`;
-                                    }
-                                },
-                            }
-                            },
-                            scales: {
-                                        y: {
-                                            ticks: {
-                                                // Include a dollar sign in the ticks
-                                                callback: function(value, index, values) {
-                                                    return prettyMs(value);
-                                                }
+                                    legend: {
+                                        //position: 'chartArea'
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Usage Chart For JIYA API'
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(tooltipItem) {
+                                                return `${tooltipItem.label} T:${tooltipItem.raw} Avg.Res:${prettyMs(calculateAvgResTime(datapoints[tooltipItem.label]))}`;
                                             }
                                         }
                                     }
+                            },
+                            scales: {
+                                y: {
+                                     beginAtZero: true
+                                }
+                            }
                         },
                     };
             plotChart && plotChart.destroy();
+            // ctx.style.backgroundColor = 'rgba(255,0,0,255)';
             plotChart = new Chart(ctx, config);
 
         })
