@@ -116,6 +116,10 @@
         return parseInt(sumRT/total)
     }
 
+    function msLabels(min,max) {
+        
+    }
+
     function generateChartByDate(date){
         loading.style.display = 'block';
         const postlogs = fetch(`logs/post/${date}.json`)
@@ -132,8 +136,12 @@
             colors = [];
             const datapoints = res;
             const dataSet = Object.keys(datapoints);
+            let alltimes = []
+            for (let api in datapoints) {
+                alltimes = [...alltimes,...datapoints[api].time]
+            }
             const data = {
-                            labels: getArrayOfTime(timestaptotime(datapoints["/gettimelineposts"].time[0])),
+                            labels: getArrayOfTime(timestaptotime(Math.min(...alltimes))),
                             datasets: dataSet.map(r => {
                                 const c = getRandomcolors();
                                 return {
@@ -169,6 +177,7 @@
                             },
                             scales: {
                                         y: {
+                            
                                             ticks: {
                                                 // Include a dollar sign in the ticks
                                                 callback: function(value, index, values) {
