@@ -48,6 +48,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.6.1/randomColor.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@lyo/pretty-ms@4.0.0/pretty-ms.min.js"></script>
 <script src="https://unpkg.com/js-datepicker"></script>
+<script src="js/script.js"></script>
 <script>
 
     const ctx = document.getElementById('myChart').getContext('2d');
@@ -131,10 +132,10 @@
 
     function generateChartByDate(date){
         loading.style.display = 'block';
-        const postlogs = fetch(`logs/post/${date}.json`)
+        const postlogs = fetch(`${BASE_URL}/post/${date}.json`)
         .then(r => r.json())
         
-        const loginlogs = fetch(`logs/login/${date}.json`)
+        const loginlogs = fetch(`${BASE_URL}/login/${date}.json`)
         .then(r => r.json())
         
         Promise.all([postlogs,loginlogs])

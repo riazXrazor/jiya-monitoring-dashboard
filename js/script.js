@@ -1,0 +1,1 @@
+const BASE_URL = 'https://jiya-api-logs.s3.ap-south-1.amazonaws.com'
